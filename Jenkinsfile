@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_NAME = 'your-dockerhub-user/nms-scanner:latest'
+    IMAGE_NAME = 'doomvs/nms-scanner:latest'
     CREDENTIALS_ID = '82e93394-3d04-4444-8216-c9b3b1112240'
   }
 
@@ -13,7 +13,7 @@ pipeline {
         checkout([$class: 'GitSCM',
           branches: [[name: '*/main']],
           userRemoteConfigs: [[
-            url: 'https://github.com/illuspas/Node-Media-Server.git',
+            url: 'https://github.com/DoomVS/NMS_audit_test.git',
             credentialsId: "${CREDENTIALS_ID}"
           ]]
         ])
