@@ -2,48 +2,50 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_NAME = "doomvs/ci-scanner"
-    TAG = "latest"
+    IMAGE_NAME = 'your-dockerhub-user/nms-scanner:latest'
+    CREDENTIALS_ID = 'github-token'
   }
 
   stages {
-    stage('Prepare') {
+
+    stage('Checkout') {
+      steps {
+        checkout([$class: 'GitSCM',
+          branches: [[name: '*/main']],
+          userRemoteConfigs: [[
+            url: 'https://github.com/illuspas/Node-Media-Server.git',
+            credentialsId: "${CREDENTIALS_ID}"
+          ]]
+        ])
+      }
+    }
+
+    stage('Build Scanner Image with Kaniko') {
       steps {
         sh '''
-          rm -rf workspace
-          git clone https://github.com/illuspas/Node-Media-Server.git workspace
+          mkdir -p /kaniko/.docker
+          echo '{"auths":{"https://index.docker.io/v1/":{"auth":"REPLACE_WITH_BASE64_AUTH"}}}' > /kaniko/.docker/config.json
+
+          /kaniko/executor \
+            --context `pwd`/scanner \
+            --dockerfile `pwd`/scanner/Dockerfile \
+            --destination=${IMAGE_NAME} \
+            --cleanup
         '''
       }
     }
 
-    stage('Build image with Kaniko') {
+    stage('Run Scanner Container') {
       steps {
         sh '''
-          docker run --rm \
-            -v $(pwd):/project \
-            -v ~/.docker:/kaniko/.docker \
-            gcr.io/kaniko-project/executor:latest \
-            --dockerfile=/project/Dockerfile \
-            --context=/project \
-            --destination=docker.io/${IMAGE_NAME}:${TAG} \
-            --skip-tls-verify
+          docker run --rm -v $(pwd):/app ${IMAGE_NAME} /app/scan.sh
         '''
       }
     }
 
-    stage('Run scan container') {
+    stage('Archive Reports') {
       steps {
-        sh '''
-          docker run --rm \
-            -v $(pwd)/workspace:/workspace \
-            ${IMAGE_NAME}:${TAG}
-        '''
-      }
-    }
-
-    stage('Archive reports') {
-      steps {
-        archiveArtifacts artifacts: 'workspace/*.json', fingerprint: true
+        archiveArtifacts artifacts: '**/*.json', allowEmptyArchive: true
       }
     }
   }
