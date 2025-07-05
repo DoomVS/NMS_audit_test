@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     IMAGE_NAME = 'your-dockerhub-user/nms-scanner:latest'
-    CREDENTIALS_ID = 'github-token'
+    CREDENTIALS_ID = '82e93394-3d04-4444-8216-c9b3b1112240'
   }
 
   stages {
